@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beno GPT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section class="sidebar">
+    <div class="brand">
+      <div class="logo">BG</div>
+      <div>
+        <div class="brand-name">Beno GPT</div>
+        <div class="brand-sub">Personal LLM Console</div>
+      </div>
+    </div>
+
+    <button class="new-chat">New chat</button>
+    <button id="new-folder" class="ghost-button">New folder</button>
+    <div class="side-actions">
+      <button id="export-chats" class="ghost-button">Export</button>
+      <label class="ghost-button file-label" for="import-chats">Import</label>
+      <input id="import-chats" type="file" accept="application/json" />
+    </div>
+
+    <div class="history" aria-label="Chat history"></div>
+
+    <div class="chat-actions">
+      <button id="rename-chat" class="ghost-button">Rename</button>
+      <button id="delete-chat" class="ghost-button danger">Delete</button>
+    </div>
+
+    <div class="nav-info">Created by Beno</div>
+  </section>
+
+  <section class="main">
+    <header class="hero">
+      <h1>你的專屬 ChatGPT 網頁</h1>
+      <p>可選模型、可自訂 system prompt、可調參數、可串流與短期記憶。</p>
+    </header>
+
+    <section class="controls">
+      <div class="control">
+        <label for="model">Model</label>
+        <select id="model">
+          <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout (Vision)</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+          <option value="openai/gpt-oss-20b">openai/gpt-oss-20b</option>
+          <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+          <option value="moonshotai/kimi-k2-instruct-0905">moonshotai/kimi-k2-instruct-0905</option>
+        </select>
+        <input id="custom-model" type="text" placeholder="Custom model (optional)" />
+      </div>
+
+      <div class="control">
+        <label for="system-prompt">System Prompt</label>
+        <textarea id="system-prompt" rows="3" placeholder="例如：你是一個精準且有條理的助理，回答請用繁體中文。"></textarea>
+      </div>
+
+      <div class="control vision-panel">
+        <div class="vision-header">
+          <label>Vision Input</label>
+          <span class="vision-hint">Max 4MB base64 payload</span>
+        </div>
+        <div class="vision-body">
+          <input id="image-input" type="file" accept="image/*" />
+          <button id="clear-image" class="ghost-button">Remove image</button>
+        </div>
+        <img id="image-preview" class="image-preview hidden" alt="Selected preview" />
+      </div>
+
+      <div class="control-row">
+        <div class="control">
+          <label for="temperature">Temperature</label>
+          <div class="range-row">
+            <input id="temperature" type="range" min="0" max="2" step="0.1" value="0.7" />
+            <span id="temperature-value" class="range-value">0.7</span>
+          </div>
+        </div>
+        <div class="control">
+          <label for="top-p">Top P</label>
+          <div class="range-row">
+            <input id="top-p" type="range" min="0" max="1" step="0.05" value="1" />
+            <span id="top-p-value" class="range-value">1</span>
+          </div>
+        </div>
+        <div class="control">
+          <label for="max-tokens">Max Tokens</label>
+          <div class="range-row">
+            <input id="max-tokens" type="range" min="16" max="2048" step="16" value="300" />
+            <span id="max-tokens-value" class="range-value">300</span>
+          </div>
+        </div>
+        <div class="control">
+          <label for="memory-turns">Memory Turns</label>
+          <div class="range-row">
+            <input id="memory-turns" type="range" min="1" max="20" step="1" value="6" />
+            <span id="memory-turns-value" class="range-value">6</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="conversation">
+      <div id="output" aria-live="polite"></div>
+    </section>
+
+    <div class="bottom-section">
+      <textarea id="prompt" rows="2" placeholder="Ask me anything... (Enter to send, Shift+Enter for newline)"></textarea>
+      <div id="submit">Send</div>
+    </div>
+  </section>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div id="modal-title" class="modal-title"></div>
+      <div id="modal-message" class="modal-message"></div>
+      <input id="modal-input" class="modal-input" type="text" />
+      <div class="modal-actions">
+        <button id="modal-cancel" class="ghost-button">Cancel</button>
+        <button id="modal-confirm" class="ghost-button primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
