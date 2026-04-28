@@ -1,0 +1,10 @@
+{
+  "name": "beno-gpt-v2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Generation AI Homework 02 chatbot with memory, multimodal input, routing, and local MCP-style tools.",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  }
+}

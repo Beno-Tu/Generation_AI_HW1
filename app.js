@@ -23,6 +23,12 @@ const temperatureInput = document.querySelector("#temperature");
 const topPInput = document.querySelector("#top-p");
 const maxTokensInput = document.querySelector("#max-tokens");
 const memoryTurnsInput = document.querySelector("#memory-turns");
+const toolsEnabledInput = document.querySelector("#tools-enabled");
+const routeStatusElement = document.querySelector("#route-status");
+const memoryInput = document.querySelector("#memory-input");
+const addMemoryButton = document.querySelector("#add-memory");
+const memoryListElement = document.querySelector("#memory-list");
+const memoryCountElement = document.querySelector("#memory-count");
 
 const temperatureValue = document.querySelector("#temperature-value");
 const topPValue = document.querySelector("#top-p-value");
@@ -38,8 +44,10 @@ let messageIdCounter = 1;
 let folderIdCounter = 1;
 const chats = [];
 const folders = [];
+const memories = [];
 let activeChatId = null;
 const STORAGE_KEY = "beno-gpt-chats-v1";
+const MEMORY_STORAGE_KEY = "beno-gpt-memory-v1";
 const LEGACY_STORAGE_KEY = "anya-gpt-chats-v1";
 let modalConfirmHandler = null;
 let currentImageDataUrl = null;
@@ -58,7 +66,92 @@ function getSelectedModel() {
 
 function isVisionModel(modelName) {
   const name = (modelName || "").toLowerCase();
+  if (name === "auto") return true;
   return name.includes("vision") || name.includes("llama-4-scout") || name.includes("llava");
+}
+
+function renderMemories() {
+  memoryListElement.innerHTML = "";
+  memoryCountElement.textContent = `${memories.length} saved`;
+
+  if (memories.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "memory-empty";
+    empty.textContent = "No saved memories yet.";
+    memoryListElement.append(empty);
+    return;
+  }
+
+  memories.forEach((memory) => {
+    const item = document.createElement("div");
+    item.className = "memory-item";
+
+    const text = document.createElement("span");
+    text.textContent = memory.text;
+
+    const remove = document.createElement("button");
+    remove.className = "memory-remove";
+    remove.type = "button";
+    remove.textContent = "x";
+    remove.title = "Forget this memory";
+    remove.addEventListener("click", () => {
+      const index = memories.findIndex((entry) => entry.id === memory.id);
+      if (index >= 0) memories.splice(index, 1);
+      renderMemories();
+      saveState();
+    });
+
+    item.append(text, remove);
+    memoryListElement.append(item);
+  });
+}
+
+function addMemory(text) {
+  const clean = text.trim();
+  if (!clean) return;
+  const alreadySaved = memories.some((memory) => memory.text === clean);
+  if (alreadySaved) return;
+  memories.unshift({
+    id: Date.now(),
+    text: clean,
+    createdAt: new Date().toISOString()
+  });
+  memoryInput.value = "";
+  renderMemories();
+  saveState();
+}
+
+function rememberFactsFromUserText(text) {
+  const patterns = [
+    /(?:我叫|我的名字是|我的名稱是)\s*([^\s，。,.!?！？]{1,30})/i,
+    /(?:call me|my name is|i am)\s+([a-z0-9_\- ]{1,40})/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const name = match[1].trim();
+    if (!name) continue;
+    addMemory(`使用者的名字是 ${name}`);
+    return;
+  }
+}
+
+function loadStandaloneMemories() {
+  try {
+    const storedMemories = JSON.parse(localStorage.getItem(MEMORY_STORAGE_KEY) || "[]");
+    if (!Array.isArray(storedMemories)) return;
+    memories.length = 0;
+    storedMemories.forEach((memory) => {
+      if (typeof memory === "string") {
+        memories.push({ id: Date.now() + memories.length, text: memory, createdAt: null });
+      } else if (memory?.text) {
+        memories.push(memory);
+      }
+    });
+  } catch {
+    memories.length = 0;
+  }
 }
 
 function createChat() {
@@ -269,12 +362,14 @@ function saveState() {
   const payload = {
     chats: chatsForStorage,
     folders,
+    memories,
     activeChatId,
     chatIdCounter,
     messageIdCounter,
     folderIdCounter
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  localStorage.setItem(MEMORY_STORAGE_KEY, JSON.stringify(memories));
 }
 
 function loadState() {
@@ -296,11 +391,25 @@ function loadState() {
     if (Array.isArray(data.folders)) {
       data.folders.forEach((folder) => folders.push(folder));
     }
+    memories.length = 0;
+    const storedMemories = Array.isArray(data.memories)
+      ? data.memories
+      : JSON.parse(localStorage.getItem(MEMORY_STORAGE_KEY) || "[]");
+    if (Array.isArray(storedMemories)) {
+      storedMemories.forEach((memory) => {
+        if (typeof memory === "string") {
+          memories.push({ id: Date.now() + memories.length, text: memory, createdAt: null });
+        } else if (memory?.text) {
+          memories.push(memory);
+        }
+      });
+    }
     activeChatId = data.activeChatId || (chats[0] && chats[0].id) || null;
     chatIdCounter = data.chatIdCounter || 1;
     messageIdCounter = data.messageIdCounter || 1;
     folderIdCounter = data.folderIdCounter || 1;
     renderChatList();
+    renderMemories();
     renderConversation();
     return true;
   } catch (error) {
@@ -337,8 +446,15 @@ function buildMessagesForRequest(chat, allowImages) {
 
   const messages = [];
   const systemPrompt = systemPromptInput.value.trim();
-  if (systemPrompt) {
-    messages.push({ role: "system", content: systemPrompt });
+  const memoryPrompt = memories.length
+    ? `Long-term memory from previous sessions:\n${memories
+        .slice(0, 30)
+        .map((memory) => `- ${memory.text}`)
+        .join("\n")}`
+    : "";
+  const combinedSystemPrompt = [systemPrompt, memoryPrompt].filter(Boolean).join("\n\n");
+  if (combinedSystemPrompt) {
+    messages.push({ role: "system", content: combinedSystemPrompt });
   }
 
   messages.push(...recentMessages);
@@ -365,6 +481,14 @@ bindRangeDisplay(temperatureInput, temperatureValue, (value) => Number(value).to
 bindRangeDisplay(topPInput, topPValue, (value) => Number(value).toFixed(2));
 bindRangeDisplay(maxTokensInput, maxTokensValue);
 bindRangeDisplay(memoryTurnsInput, memoryTurnsValue);
+
+addMemoryButton.addEventListener("click", () => addMemory(memoryInput.value));
+memoryInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    addMemory(memoryInput.value);
+  }
+});
 
 function resetImageSelection() {
   currentImageDataUrl = null;
@@ -439,6 +563,10 @@ async function streamMessage(payload, assistantMessageId) {
           updateMessageContent(assistantMessageId, assistantText);
         } else if (payload.type === "done") {
           return assistantText;
+        } else if (payload.type === "route") {
+          routeStatusElement.textContent = `Routed to ${payload.model} (${payload.reason}).`;
+        } else if (payload.type === "tool") {
+          routeStatusElement.textContent = payload.message;
         } else if (payload.type === "error") {
           throw new Error(payload.message || "Server error");
         }
@@ -453,10 +581,12 @@ async function getMessage() {
   const userInput = promptElement.value.trim();
   if ((!userInput && !currentImageDataUrl) || isLoading) return;
 
-  const chat = getActiveChat();
+  let chat = getActiveChat();
   if (!chat) {
     createChat();
+    chat = getActiveChat();
   }
+  if (!chat) return;
 
   const selectedModel = getSelectedModel();
   const allowImages = isVisionModel(selectedModel);
@@ -471,6 +601,7 @@ async function getMessage() {
   setLoadingState(true);
 
   const safeText = userInput || "Describe this image.";
+  rememberFactsFromUserText(safeText);
   const userMessage = {
     id: messageIdCounter++,
     role: "user",
@@ -492,6 +623,7 @@ async function getMessage() {
       top_p: Number(topPInput.value),
       max_tokens: Number(maxTokensInput.value)
     },
+    toolsEnabled: toolsEnabledInput.checked,
     messages: buildMessagesForRequest(chat, allowImages)
   };
 
@@ -500,6 +632,7 @@ async function getMessage() {
   renderConversation();
 
   try {
+    routeStatusElement.textContent = "Routing request...";
     const aiMessage = await streamMessage(payload, assistantMessage.id);
     assistantMessage.content = aiMessage;
     saveState();
@@ -591,10 +724,11 @@ newFolderButton.addEventListener("click", () => {
 });
 
 exportButton.addEventListener("click", () => {
-  const payload = {
-    chats,
-    folders,
-    activeChatId,
+    const payload = {
+      chats,
+      folders,
+      memories,
+      activeChatId,
     chatIdCounter,
     messageIdCounter,
     folderIdCounter,
@@ -631,6 +765,15 @@ importInput.addEventListener("change", (event) => {
       } else if (Array.isArray(data.chats)) {
         chatsPayload = data.chats;
         foldersPayload = Array.isArray(data.folders) ? data.folders : null;
+        if (Array.isArray(data.memories)) {
+          data.memories.forEach((memory) => {
+            if (memory?.text) memories.push({
+              id: Date.now() + memories.length,
+              text: memory.text,
+              createdAt: memory.createdAt || null
+            });
+          });
+        }
       } else if (Array.isArray(data.data)) {
         chatsPayload = data.data;
       }
@@ -678,6 +821,7 @@ importInput.addEventListener("change", (event) => {
         activeChatId = chats[0].id;
       }
       renderChatList();
+      renderMemories();
       renderConversation();
       saveState();
     } catch (error) {
@@ -689,5 +833,7 @@ importInput.addEventListener("change", (event) => {
 });
 
 if (chats.length === 0 && !loadState()) {
+  loadStandaloneMemories();
   createChat();
+  renderMemories();
 }

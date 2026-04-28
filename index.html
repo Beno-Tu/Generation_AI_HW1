@@ -15,7 +15,7 @@
       <div class="logo">BG</div>
       <div>
         <div class="brand-name">Beno GPT</div>
-        <div class="brand-sub">Personal LLM Console</div>
+        <div class="brand-sub">Personal LLM Console v2</div>
       </div>
     </div>
 
@@ -40,13 +40,15 @@
   <section class="main">
     <header class="hero">
       <h1>你的專屬 ChatGPT 網頁</h1>
-      <p>可選模型、可自訂 system prompt、可調參數、可串流與短期記憶。</p>
+      <p>支援長期記憶、多模態、自動模型路由、串流回覆與本機 MCP 工具。</p>
+      <div id="route-status" class="route-status">Router waiting. Send a message with Auto route best model selected.</div>
     </header>
 
     <section class="controls">
       <div class="control">
         <label for="model">Model</label>
         <select id="model">
+          <option value="auto" selected>Auto route best model</option>
           <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout (Vision)</option>
           <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
           <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
@@ -62,6 +64,18 @@
         <textarea id="system-prompt" rows="3" placeholder="例如：你是一個精準且有條理的助理，回答請用繁體中文。"></textarea>
       </div>
 
+      <div class="control memory-panel">
+        <div class="memory-header">
+          <label for="memory-input">Long-term Memory</label>
+          <span id="memory-count" class="memory-count">0 saved</span>
+        </div>
+        <div class="memory-compose">
+          <input id="memory-input" type="text" placeholder="Save a durable fact, preference, or project note..." />
+          <button id="add-memory" class="ghost-button">Remember</button>
+        </div>
+        <div id="memory-list" class="memory-list"></div>
+      </div>
+
       <div class="control vision-panel">
         <div class="vision-header">
           <label>Vision Input</label>
@@ -75,6 +89,13 @@
       </div>
 
       <div class="control-row">
+        <div class="control tool-toggle">
+          <label for="tools-enabled">MCP Tools</label>
+          <label class="switch-row">
+            <input id="tools-enabled" type="checkbox" checked />
+            <span>Enable local tools</span>
+          </label>
+        </div>
         <div class="control">
           <label for="temperature">Temperature</label>
           <div class="range-row">

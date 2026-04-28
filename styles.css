@@ -319,6 +319,19 @@ body {
   color: var(--muted);
 }
 
+.route-status {
+  margin-top: 12px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(74, 163, 255, 0.14);
+  border: 1px solid rgba(74, 163, 255, 0.38);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .controls {
   display: flex;
   flex-direction: column;
@@ -340,7 +353,7 @@ body {
 
 .control-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -380,6 +393,97 @@ textarea {
   border-radius: 14px;
   padding: 12px;
   background: rgba(18, 24, 38, 0.8);
+}
+
+.memory-panel {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(18, 24, 38, 0.8);
+}
+
+.memory-header,
+.memory-compose,
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-header {
+  justify-content: space-between;
+}
+
+.memory-count {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.memory-compose input {
+  flex: 1;
+}
+
+.memory-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.memory-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memory-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(94, 228, 169, 0.1);
+  border: 1px solid rgba(94, 228, 169, 0.28);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.memory-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-remove {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 107, 107, 0.2);
+  color: #ffd6d6;
+  cursor: pointer;
+}
+
+.tool-toggle {
+  justify-content: end;
+}
+
+.switch-row {
+  min-height: 40px;
+  color: var(--text);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.switch-row input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--accent);
 }
 
 .vision-header {
